@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ULTIMATE GARAGE 3D</title>
+<style>
+/* ===== ESTILO: grafite + vermelho (acento) + azul elétrico (foco) ===== */
+:root{--bg:#0e1013;--ln:#2b3038;--mu:#8d949e;--tx:#e9ebee;--ac:#ff4b2b;--bl:#2f7bff}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font:14px Bahnschrift,"Segoe UI",system-ui,sans-serif}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:#222730;border:1px solid var(--ln);border-radius:6px;padding:7px 11px;transition:.2s}
+button:hover{border-color:var(--ac);transform:translateY(-1px)}
+:focus-visible{outline:2px solid var(--bl);outline-offset:2px}
+.on{background:var(--ac)!important;border-color:var(--ac);color:#fff}
+input[type=text],input:not([type]){width:100%;background:#0f1215;border:1px solid var(--ln);border-radius:6px;padding:8px}
+header{position:fixed;inset:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 14px;z-index:5;background:linear-gradient(#000b,transparent);pointer-events:none}
+header>*{pointer-events:auto}
+h1{font-size:17px;letter-spacing:.16em;font-weight:800}h1 b{color:var(--ac)}
+#cn{flex:1;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#side{position:fixed;top:54px;right:12px;bottom:66px;width:350px;z-index:5;display:flex;flex-direction:column;background:#15181de8;backdrop-filter:blur(12px);border:1px solid var(--ln);border-radius:12px;transition:transform .35s,opacity .35s}
+#side.h{transform:translateX(120%);opacity:0}
+#nav{display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-bottom:1px solid var(--ln)}
+#nav button{padding:5px 9px;font-size:12px}
+#pan{flex:1;overflow:auto;padding:12px;animation:in .3s}
+@keyframes in{from{opacity:0;transform:translateX(12px)}}
+#bar{position:fixed;left:12px;right:376px;bottom:12px;z-index:5;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+#bar button{background:#14171cdd;backdrop-filter:blur(8px)}
+.ch{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.lb{color:var(--mu);margin-top:8px}
+.cd{display:block;width:100%;text-align:left;margin:6px 0}
+.cd small,.nt{display:block;color:var(--mu);font-size:12px;line-height:1.4}
+.nt{margin:10px 0}
+.sw{width:28px;height:28px;border-radius:50%;padding:0}
+.sw.on{outline:2px solid #fff}
+input[type=color]{width:34px;height:28px;padding:0;border:0;background:none}
+summary{cursor:pointer;margin:10px 0 2px;color:var(--bl);font-weight:700}
+table{width:100%;border-collapse:collapse;margin:8px 0}
+td,th{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:right}td:first-child,th:first-child{text-align:left}
+.up{color:var(--ac);font-weight:700}
+.big{font-size:30px;font-weight:800;color:var(--ac)}
+#toast{position:fixed;left:50%;top:60px;transform:translate(-50%,-20px);background:#222730;border:1px solid var(--ac);border-radius:8px;padding:9px 16px;z-index:9;opacity:0;transition:.3s;pointer-events:none}
+#toast.s{opacity:1;transform:translate(-50%,0)}
+#load{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;text-align:center;transition:opacity .6s}
+.pb{width:240px;height:3px;background:var(--ln);margin:18px auto 10px}.pb i{display:block;height:100%;width:0;background:var(--ac);transition:width .2s}
+@media(max-width:760px){#side{top:auto;left:8px;right:8px;bottom:8px;width:auto;height:40vh}#bar{left:8px;right:8px;bottom:calc(40vh + 14px)}#bar button{padding:5px 8px;font-size:12px}h1{font-size:14px}}
+@media(prefers-reduced-motion){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="load"><div><h1>ULTIMATE <b>GARAGE</b> 3D</h1><div class="pb"><i id="lb"></i></div><p id="lt">Acendendo as luzes da garagem…</p></div></div>
+<header><h1>ULTIMATE <b>GARAGE</b> 3D</h1><span id="cn"></span><button id="snd" title="Ligar ou desligar todos os sons">Som: ligado</button><button id="tg" title="Mostrar ou ocultar o painel">Painel</button></header>
+<aside id="side"><nav id="nav"></nav><div id="pan"></div></aside>
+<div id="bar"></div><div id="toast"></div>
+
+<!-- Requer internet apenas para carregar o Three.js (CDN gratuito) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+if(!window.THREE){$('lt').textContent='Sem internet: não foi possível carregar o Three.js (CDN).';throw new Error('THREE ausente')}
+const fmt=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+
+/* ===== 1. DADOS (para cadastrar um carro novo, basta adicionar uma linha) =====
+   [marca, modelo, ano, categoria, carroceria, motor, tração, cv, Nm, kg, preço ilustrativo] */
+const CARS=[
+['BMW','M3 Competition',2023,'Esportivo','sedan','3.0 L6 biturbo','Traseira',510,650,1730,820000],
+['Mercedes-Benz','C 63 S AMG',2018,'Esportivo','sedan','4.0 V8 biturbo','Traseira',510,700,1730,700000],
+['Audi','RS3 Sedan',2022,'Esportivo','sedan','2.5 L5 turbo','Integral',400,500,1600,560000],
+['Porsche','911 Carrera S',2022,'Esportivo','coupe','3.0 H6 biturbo','Traseira',450,530,1550,1050000],
+['Ferrari','296 GTB',2023,'Supercarro','super','3.0 V6 turbo híbrido','Traseira',830,740,1470,3500000],
+['Lamborghini','Huracán EVO',2021,'Supercarro','super','5.2 V10','Integral',640,600,1422,3600000],
+['Toyota','GR Supra',2021,'Esportivo','coupe','3.0 L6 turbo','Traseira',387,500,1540,520000],
+['Nissan','GT-R',2020,'Esportivo','coupe','3.8 V6 biturbo','Integral',565,633,1740,900000],
+['Ford','Mustang GT',2022,'Muscle car','coupe','5.0 V8','Traseira',450,569,1700,480000],
+['Volkswagen','Golf GTI',2022,'Hatch','hatch','2.0 L4 turbo','Dianteira',245,370,1400,260000],
+['Honda','Civic Type R',2023,'Hatch','hatch','2.0 L4 turbo','Dianteira',329,420,1430,420000],
+['Porsche','Macan GTS',2022,'SUV','suv','2.9 V6 biturbo','Integral',440,550,1900,650000],
+['Ford','Ranger Raptor',2023,'Picape','pickup','3.0 V6 biturbo','4x4',292,491,2300,420000],
+['Volkswagen','Fusca 1300',1970,'Clássico','coupe','1.3 H4','Traseira',46,94,790,60000]
+].map(a=>({b:a[0],m:a[1],y:a[2],cat:a[3],body:a[4],eng:a[5],dr:a[6],hp:a[7],tq:a[8],kg:a[9],p:a[10]}));
+
+// Medidas do modelo procedural por carroceria: [comprimento, largura, altura, linha do capô, x início do capô, x fim do vidro traseiro, x teto frente, x teto trás, raio da roda]
+const BODY={sedan:[4.7,1.85,1.42,.95,.45,-1.3,0,-.9,.33],coupe:[4.5,1.85,1.3,.9,.6,-1.1,.1,-.75,.33],super:[4.5,1.95,1.15,.8,.85,-.9,.25,-.55,.34],
+hatch:[4.1,1.78,1.45,.95,.5,-1.7,-.05,-1.45,.32],suv:[4.6,1.9,1.65,1.1,.65,-2,.1,-1.8,.38],pickup:[5.3,1.95,1.8,1.2,1,-.5,.55,-.2,.4]};
+const FIN=[[.3,.25,1],[.9,.3,1],[.1,.85,0],[.55,.18,1]]; // metalness, rugosidade, verniz
+// Peças de preparação: [nome, preço, Δcv (valor <1 = %), ΔNm (<1 = %), Δkg, descrição]
+const MODS={ecu:['Remap da ECU',1800,.08,.08,0,'Reprograma injeção, ignição e pressão do turbo.'],intake:['Admissão esportiva',650,.03,.02,0,'Filtro e duto de maior fluxo.'],
+exhaust:['Escape esportivo',1900,.04,.03,-8,'Menos restrição aos gases.'],turbo:['Turbo (sobrealimentação)',9500,0,0,12,'Ajuste a pressão em bar abaixo.'],
+ic:['Intercooler maior',2800,.03,.03,4,'Ar mais frio e denso.'],cool:['Arrefecimento reforçado',1500,0,0,3,'Radiador e ventoinha maiores, mais estabilidade térmica.'],
+brakes:['Freios esportivos',6200,0,0,-6,'Discos maiores e pinças de 6 pistões.'],weight:['Redução de peso',7000,0,0,-90,'Bancos leves e menos isolamento.'],
+gear:['Relação de câmbio curta',3400,0,.04,0,'Retomadas mais fortes, menor velocidade final.']};
+const NAME={finish:'Pintura',spoiler:'Aerofólio',kit:'Kit de carbono (splitter, difusor, saias)',stripe:'Faixa',tint:'Vidros',tips:'Ponteiras de escape',hl:'Faróis',wheel:'Rodas',size:'Aro',susp:'Suspensão'};
+const OPT={finish:['Brilho','Metálica','Fosca','Perolizada'],spoiler:['Original','Ducktail','Asa GT'],kit:['Original','Carbono'],stripe:['Sem faixa','Central'],tint:['Clara','Leve','Escura','Total'],
+tips:['Simples','Dupla','Quádrupla'],hl:['Branco','Azul','Âmbar'],wheel:['Prata','Grafite esportiva','Forjada dourada'],size:['17"','18"','19"','20"'],susp:['Original','Esportiva (-30 mm)','Rebaixada (-70 mm)']};
+const PR={finish:[0,1200,2500,3200],spoiler:[0,900,2200],kit:[0,5200],stripe:[0,450],tint:[0,200,350,500],tips:[0,700,1500],hl:[0,300,300],wheel:[0,2400,6800],size:[0,0,500,1100],susp:[0,2600,3900]};
+const COL=['#c8161d','#e8e8ea','#101114','#2f7bff','#ff7a1a','#2e9e5b','#f2c230','#6b7280','#7a2cff'];
+const LIGHTS=[['Estúdio',0xffffff,0xff4b2b,0x2f7bff],['Neon',0x7a8cff,0xff2b8a,0x2bf0ff],['Pôr do sol',0xffb070,0xff5a2b,0x7a5cff]];
+const VIEWS={Frente:[0,1.35,8],Lateral:[1.5708,1.45,8],Traseira:[3.1416,1.35,8],Topo:[.6,.08,9],Baixo:[.6,3,8]};
+// Árvore mecânica: [chave da peça 3D ('-' = ainda sem modelo 3D), nome, função]
+const TREE=[['Motor',[['block','Bloco do motor','Estrutura onde os cilindros e pistões trabalham.'],['head','Cabeçote','Aloja válvulas e comando; fecha a câmara.'],['-','Pistões, bielas e virabrequim','Transformam a explosão em rotação.'],['coil','Bobinas e velas','Geram a faísca da combustão.'],['intake','Coletor de admissão','Distribui o ar aos cilindros.'],['turbo','Turbocompressor','Usa o escape para comprimir o ar.']]],
+['Arrefecimento',[['radiator','Radiador','Dissipa o calor do líquido.'],['fan','Ventoinha','Força o ar pelo radiador.'],['ic','Intercooler','Resfria o ar vindo do turbo.'],['-','Bomba d’água e termostato','Circulam e regulam o líquido.']]],
+['Transmissão e tração',[['gearbox','Câmbio','Seleciona a relação de marchas.'],['shaft','Eixo cardã','Leva a força ao diferencial.'],['diff','Diferencial','Divide o torque entre as rodas.']]],
+['Outros sistemas',[['brakes','Freios (pinças)','Convertem movimento em calor.'],['battery','Bateria','Alimenta partida e elétrica.'],['tank','Tanque de combustível','Armazena o combustível.'],['exhaust','Escapamento','Conduz e silencia os gases.'],['-','Interior, bancos, direção e chassi','Ainda sem modelo 3D nesta versão.']]]];
+const PT={};TREE.forEach(g=>g[1].forEach(x=>PT[x[0]]=x));
+const BAY=['block','head','coil','intake','turbo','fan','radiator','ic','battery'];
+
+/* ===== 2. ESTADO, HISTÓRICO E CÁLCULOS ===== */
+const S0=()=>({car:0,color:'#c8161d',finish:0,wheel:0,size:1,susp:0,spoiler:0,stripe:0,tint:1,kit:0,tips:0,hl:0,caliper:'#e62b1e',plate:'GARAGE3D',mods:[],boost:.5});
+let S=S0(),hist=[],xray=false,sel=null,tab=0,q='',fc='Todos',auto=true,lightI=0,T={hood:0,door:0,trunk:0},cur={hood:0,door:0,trunk:0};
+const push=()=>{hist.push(JSON.stringify(S));if(hist.length>40)hist.shift()};
+function stats(s){const c=CARS[s.car],d=(v,b)=>Math.abs(v)<1?b*v:v;let hp=c.hp,tq=c.tq,kg=c.kg,cost=0;
+ s.mods.forEach(k=>{const m=MODS[k];hp+=d(m[2],c.hp);tq+=d(m[3],c.tq);kg+=m[4];cost+=m[1]});
+ if(s.mods.includes('turbo')){hp+=c.hp*.22*s.boost;tq+=c.tq*.25*s.boost} // pressão de turbo
+ for(const k in PR)cost+=PR[k][s[k]];
+ hp=Math.round(hp);tq=Math.round(tq);const r=kg/hp;return{hp,tq,kg,cost,r,t:1.8*Math.pow(r,.7)}} // 0-100 estimado por fórmula simples
+
+/* ===== 3. ÁUDIO (Web Audio: sons sintetizados, só começam após um clique) ===== */
+let AC,mute=false,eo=null;
+const ac=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume()}catch(e){}return AC};
+function tone(f,d,ty,v,f2){if(mute||!ac())return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=ty||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.05,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}
+const thud=()=>tone(140,.3,'triangle',.25,45);
+function engine(){if(eo){eo.o.stop();eo.l.stop();eo=null;return false}
+ if(mute||!ac())return false;const t=AC.currentTime,o=AC.createOscillator(),l=AC.createOscillator(),lg=AC.createGain(),f=AC.createBiquadFilter(),g=AC.createGain();
+ o.type='sawtooth';o.frequency.setValueAtTime(30,t);o.frequency.linearRampToValueAtTime(95,t+.5);o.frequency.linearRampToValueAtTime(48,t+1.2);
+ l.frequency.value=14;lg.gain.value=5;l.connect(lg);lg.connect(o.frequency);f.type='lowpass';f.frequency.value=380;
+ g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(.16,t+.4);o.connect(f);f.connect(g);g.connect(AC.destination);o.start(t);l.start(t);eo={o,l};return true}
+function rev(){if(!eo)return toast('Ligue o motor primeiro.');const p=eo.o.frequency,t=AC.currentTime;p.cancelScheduledValues(t);p.setValueAtTime(48,t);p.linearRampToValueAtTime(150,t+.3);p.linearRampToValueAtTime(48,t+1.1)}
+
+/* ===== 4. CENA 3D ===== */
+let R;try{R=new THREE.WebGLRenderer({canvas:$('c'),antialias:true})}catch(e){$('lt').textContent='Seu navegador não suporta WebGL.';throw e}
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.toneMapping=THREE.ACESFilmicToneMapping;R.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,100);scene.background=new THREE.Color(0x0b0c0e);scene.fog=new THREE.FogExp2(0x0b0c0e,.03);
+// Ambiente de reflexos: sala com faixas de luz (gerada por código, sem arquivos externos)
+const es=new THREE.Scene();es.background=new THREE.Color(0x0c0e11);
+[[0,6,0,10,.2,4,0xffffff],[-7,2.5,0,.2,3,8,0xff6a4a],[7,2.5,0,.2,3,8,0x6a9aff],[0,2.5,-7,10,3,.2,0xffffff]].forEach(a=>{const m=new THREE.Mesh(new THREE.BoxGeometry(a[3],a[4],a[5]),new THREE.MeshBasicMaterial({color:new THREE.Color(a[6]).multiplyScalar(3)}));m.position.set(a[0],a[1],a[2]);es.add(m)});
+const pm=new THREE.PMREMGenerator(R);scene.environment=pm.fromScene(es,.04).texture;pm.dispose();
+const key=new THREE.DirectionalLight(0xffffff,1.1),la=new THREE.PointLight(0xff4b2b,1.3,14),lb=new THREE.PointLight(0x2f7bff,1.3,14);
+key.position.set(5,9,4);key.castShadow=true;key.shadow.mapSize.set(1024,1024);Object.assign(key.shadow.camera,{left:-6,right:6,top:6,bottom:-6});
+la.position.set(-4,2.5,-3);lb.position.set(4,2,-3);scene.add(key,la,lb);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(40,64),new THREE.MeshStandardMaterial({color:0x14171b,roughness:.35,metalness:.6}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const ring=new THREE.Mesh(new THREE.RingGeometry(4.1,4.16,96),new THREE.MeshBasicMaterial({color:0xff4b2b}));ring.rotation.x=-Math.PI/2;ring.position.y=.01;scene.add(ring);
+const car=new THREE.Group();scene.add(car);let hood=null,trunk=null,doors=[];
+function setLight(i){lightI=i%LIGHTS.length;const L=LIGHTS[lightI];key.color.setHex(L[1]);la.color.setHex(L[2]);lb.color.setHex(L[3]);toast('Iluminação: '+L[0])}
+
+// Câmera orbital própria (arrastar = girar, roda/pinça = zoom)
+let th=.6,ph=1.25,rad=9,tth=.6,tph=1.25,trad=8,drag=false,last=0,mv=0;const pts=new Map();
+function view(n){const v=VIEWS[n],d=((v[0]-tth+Math.PI)%(2*Math.PI)+3*Math.PI)%(2*Math.PI)-Math.PI;tth+=d;tph=v[1];trad=v[2];last=performance.now()}
+const cv=$('c');
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);drag=true;mv=0});
+cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const p=pts.get(e.pointerId);
+ if(pts.size==2){const o=[...pts.entries()].find(x=>x[0]!=e.pointerId)[1],a=Math.hypot(p[0]-o[0],p[1]-o[1]),b=Math.hypot(e.clientX-o[0],e.clientY-o[1]);trad=Math.min(16,Math.max(3.5,trad*a/b))}
+ else{tth-=(e.clientX-p[0])*.006;tph=Math.min(3.05,Math.max(.05,tph-(e.clientY-p[1])*.006))}
+ mv+=Math.abs(e.clientX-p[0])+Math.abs(e.clientY-p[1]);pts.set(e.pointerId,[e.clientX,e.clientY]);last=performance.now()});
+cv.addEventListener('pointerup',e=>{pts.delete(e.pointerId);drag=pts.size>0;if(mv<6)pick(e)});
+cv.addEventListener('wheel',e=>{e.preventDefault();trad=Math.min(16,Math.max(3.5,trad*(1+e.deltaY*.001)));last=performance.now()},{passive:false});
+const ray=new THREE.Raycaster();
+function pick(e){ray.setFromCamera(new THREE.Vector2(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1),cam);
+ const h=ray.intersectObjects(car.children,true).filter(i=>!xray||i.object.userData.part)[0];
+ if(h&&h.object.userData.part){selPart(h.object.userData.part,true)}else if(sel){sel=null;paintSel();render()}}
+function paintSel(){car.traverse(o=>{if(o.userData.part&&o.material.emissive)o.material.emissive.setHex(o.userData.part==sel?0xff4b2b:0)})}
+function selPart(k,fromClick){if(k=='-')return;sel=k;if(BAY.includes(k))T.hood=1;else if(!xray&&!fromClick){xray=true;buildCar()}paintSel();tab=3;render()}
+
+/* ===== 5. CONSTRUÇÃO DO CARRO (procedural; tudo reage ao estado S) ===== */
+const Bx=(a,b,c)=>new THREE.BoxGeometry(a,b,c),Cy=(r,h,n)=>new THREE.CylinderGeometry(r,r,h,n||24);
+const mm=(c,e)=>new THREE.MeshStandardMaterial({color:c,metalness:.6,roughness:.4,emissive:e||0});
+function M(geo,mat,par,x,y,z,k){const m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.castShadow=true;if(k)m.userData.part=k;par.add(m);return m}
+function poly(p,w,mat,b){const g=new THREE.ExtrudeGeometry(new THREE.Shape(p.map(a=>new THREE.Vector2(a[0],a[1]))),{depth:w,bevelEnabled:true,bevelSize:b,bevelThickness:b,bevelSegments:3});g.translate(0,0,-w/2);const m=new THREE.Mesh(g,mat);m.castShadow=true;return m}
+function tex(draw,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t}
+const CARBON=tex(x=>{x.fillStyle='#16181b';x.fillRect(0,0,16,16);x.fillStyle='#2b2f35';x.fillRect(0,0,8,8);x.fillRect(8,8,8,8)},16,16);CARBON.wrapS=CARBON.wrapT=THREE.RepeatWrapping;CARBON.repeat.set(6,6);
+function clear(){car.children.slice().forEach(o=>{o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material&&!Array.isArray(n.material))n.material.dispose()});car.remove(o)});hood=trunk=null;doors=[]}
+function buildCar(){
+ clear();const c=CARS[S.car],[L,W,H,bh,hx,tx,c1,c2,wr]=BODY[c.body],g=.2,bay=bh*.55,hf=bh*.82,fin=FIN[S.finish];
+ const X=m=>{if(xray){m.transparent=true;m.opacity=Math.min(m.opacity,.12);m.depthWrite=false}return m};
+ const paint=X(new THREE.MeshPhysicalMaterial({color:S.color,metalness:fin[0],roughness:fin[1],clearcoat:fin[2],clearcoatRoughness:.05}));
+ const glass=X(new THREE.MeshPhysicalMaterial({color:0x05070a,metalness:.2,roughness:.05,transparent:true,opacity:[.3,.55,.8,.95][S.tint]}));
+ const carbon=X(new THREE.MeshStandardMaterial({map:CARBON,metalness:.3,roughness:.35})),chrome=mm(0xcfd3d8),dark=X(mm(0x0a0a0b)),trim=S.kit?carbon:paint;
+ const bd=new THREE.Group();bd.position.y=[0,-.03,-.07][S.susp];car.add(bd);
+ // carroceria, painéis laterais do compartimento do motor e frente
+ bd.add(poly([[-L/2,g],[L/2,g],[L/2,bay],[hx,bay],[hx,bh-.05],[-L/2,bh-.05]],W*.96,paint,.03));
+ [1,-1].forEach(s=>{const f=poly([[hx,g+.12],[L/2,g+.12],[L/2,hf-.05],[hx,bh-.05]],.07,paint,.01);f.position.z=s*(W*.48-.03);bd.add(f)});
+ M(Bx(.08,hf-.05-bay,W*.9),paint,bd,L/2,(bay+hf)/2-.025,0);M(Bx(.09,.14,W*.5),dark,bd,L/2+.01,(bay+hf)/2-.04,0);
+ // cabine, vidros e teto
+ bd.add(poly([[hx,bh-.05],[c1,H],[c2,H],[tx,bh-.05]],W*.8,glass,.02));
+ const roof=M(Bx(c1-c2,.05,W*.82),paint,bd,(c1+c2)/2,H+.02,0);if(S.stripe)M(Bx(c1-c2,.052,.28),mm(0xf2f2f2),bd,(c1+c2)/2,H+.022,0);
+ // capô (dobradiça na base do para-brisa)
+ const a=Math.atan2(bh-hf,L/2-hx),len=Math.hypot(L/2-hx,bh-hf);hood=new THREE.Group();hood.position.set(hx,bh-.02,0);bd.add(hood);
+ [[Bx(len,.05,W*.92),paint],[Bx(len,.052,.28),mm(0xf2f2f2)]].slice(0,S.stripe?2:1).forEach((p,i)=>{const m=M(p[0],p[1],hood,Math.cos(a)*len/2,-Math.sin(a)*len/2+i*.001,0);m.rotation.z=-a});
+ // porta-malas + aerofólio (acompanha a tampa)
+ const tl=tx+L/2;trunk=new THREE.Group();trunk.position.set(tx,bh-.02,0);bd.add(trunk);
+ M(Bx(tl,.05,W*.92),paint,trunk,-tl/2,0,0);if(S.stripe)M(Bx(tl,.052,.28),mm(0xf2f2f2),trunk,-tl/2,.001,0);
+ if(S.spoiler==1)M(Bx(.28,.05,W*.8),carbon,trunk,-tl+.15,.05,0).rotation.z=.25;
+ if(S.spoiler==2){[1,-1].forEach(s=>M(Bx(.05,.2,.04),carbon,trunk,-tl+.35,.1,s*W*.3));M(Bx(.38,.035,W*.92),carbon,trunk,-tl+.35,.22,0).rotation.z=.08}
+ // portas (uma por lado) e retrovisores
+ [1,-1].forEach(s=>{const d=hx-.12-(tx+.35),dg=new THREE.Group();dg.position.set(hx-.12,0,s*W*.49);dg.userData.s=s;bd.add(dg);doors.push(dg);
+  M(Bx(d,bh-.4,.06),paint,dg,-d/2,(.4+bh-.05)/2,0);M(Bx(.16,.03,.03),chrome,dg,-d+.22,bh-.22,s*.04);
+  M(Bx(.14,.08,.18),trim,bd,hx-.05,bh+.1,s*(W*.47+.1));
+  M(Bx(.1,.1,.32),new THREE.MeshStandardMaterial({color:0x111,emissive:[0xffffff,0x66aaff,0xffb347][S.hl],emissiveIntensity:1.4}),bd,L/2-.02,(bay+hf)/2+.02,s*W*.33);
+  M(Bx(.06,.09,.4),new THREE.MeshStandardMaterial({color:0x300,emissive:0xff1a1a,emissiveIntensity:1.2}),bd,-L/2-.01,bh-.18,s*W*.33)});
+ if(S.kit){M(Bx(.35,.035,W*.95),carbon,bd,L/2-.05,g+.02,0);M(Bx(.4,.05,W*.7),carbon,bd,-L/2+.1,g+.02,0);[1,-1].forEach(s=>M(Bx(L*.45,.04,.06),carbon,bd,0,g+.04,s*W*.49))}
+ // placas e ponteiras de escape
+ const pl=tex(x=>{x.fillStyle='#f4f4f4';x.fillRect(0,0,256,64);x.strokeStyle='#123';x.lineWidth=5;x.strokeRect(3,3,250,58);x.fillStyle='#111';x.font='bold 38px sans-serif';x.textAlign='center';x.fillText(S.plate||'',128,46)},256,64),pm2=new THREE.MeshBasicMaterial({map:pl});
+ [[-L/2-.04,-Math.PI/2],[L/2+.06,Math.PI/2]].forEach(p=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(.52,.13),pm2);m.position.set(p[0],g+.36,0);m.rotation.y=p[1];bd.add(m)});
+ [[.5],[-.5,.5],[-.6,-.4,.4,.6]][S.tips].forEach(z=>M(Cy(.05,.2,16),chrome,bd,-L/2-.03,g+.1,z).rotation.z=Math.PI/2);
+ // mecânica (visível com Raio-X ou capô aberto): motor, arrefecimento, transmissão
+ const ex=(hx+L/2)/2-.1,ey=bay+.2;
+ M(Bx(.55,.28,.5),mm(0x7a808a),bd,ex,ey,0,'block');M(Bx(.5,.1,.46),mm(0x2b2f36),bd,ex,ey+.19,0,'head');M(Bx(.22,.12,.4),mm(0x9aa0a8),bd,ex-.4,ey+.12,0,'intake');
+ [-.15,-.05,.05,.15].forEach(z=>M(Bx(.05,.1,.05),mm(0xe5392f),bd,ex+.1,ey+.29,z,'coil'));
+ if(S.mods.includes('turbo'))M(Cy(.09,.22),mm(0xff6a1a),bd,ex+.34,ey,.3,'turbo').rotation.x=Math.PI/2;
+ if(S.mods.includes('ic'))M(Bx(.06,.3,.6),mm(0x2f7bff),bd,L/2-.16,ey-.05,0,'ic');
+ M(Bx(.05,.32,.7),mm(0x3a3f47),bd,L/2-.24,ey,0,'radiator');M(Cy(.14,.03,24),mm(0x15171a),bd,L/2-.31,ey,0,'fan').rotation.z=Math.PI/2;
+ M(Bx(.2,.15,.28),mm(0x2f7bff),bd,hx+.2,ey-.05,-W*.3,'battery');M(Bx(.5,.28,.3),mm(0x6d727a),bd,hx-.4,ey-.1,0,'gearbox');
+ M(Cy(.05,L*.4,16),mm(0xb0b5bc),bd,-L*.12,g+.22,0,'shaft').rotation.z=Math.PI/2;M(Bx(.3,.25,.35),mm(0x6d727a),bd,-L*.31,g+.28,0,'diff');
+ M(Bx(.7,.2,.7),mm(0x3a3f47),bd,-L*.15,g+.12,0,'tank');M(Cy(.04,L*.45,12),mm(0x9a9a9a),bd,-L*.25,g+.07,.3,'exhaust').rotation.z=Math.PI/2;
+ // rodas (não acompanham a altura da carroceria)
+ const rw=wr*(1+(S.size-1)*.04),tire=mm(0x0d0d0f),disk=mm(0x15171a),sp=mm([0xc9cdd3,0x6d727a,0xd0a24a][S.wheel]),cal=new THREE.MeshStandardMaterial({color:S.caliper,roughness:.4});
+ [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([fx,s])=>{const w=new THREE.Group();w.position.set(fx*L*.31,rw,s*(W/2-.12));car.add(w);
+  M(Cy(rw,.24,32),tire,w).rotation.x=Math.PI/2;M(Cy(rw*.7,.25,32),disk,w).rotation.x=Math.PI/2;
+  const n=[5,10,6][S.wheel];for(let i=0;i<n;i++){const sg=new THREE.Group();sg.rotation.z=i*2*Math.PI/n;w.add(sg);M(Bx(rw*.62,rw*.1,.05),sp,sg,rw*.34,0,s*.1)}
+  M(Bx(rw*.45,rw*.3,.07),cal,w,0,rw*.38,s*.06,'brakes')});
+ $('cn').textContent=c.b+' '+c.m+' · '+c.y;paintSel();
+}
+
+/* Importar modelo GLB real (Ajustes). Peças móveis e pintura por peça exigem nomes de malhas específicos. */
+function loadGLB(url){const go=()=>new THREE.GLTFLoader().load(url,g=>{clear();const m=g.scene,b=new THREE.Box3().setFromObject(m);m.scale.setScalar(4.5/Math.max(b.max.x-b.min.x,b.max.z-b.min.z));b.setFromObject(m);m.position.y-=b.min.y;
+  m.traverse(o=>{o.castShadow=true;if(o.material&&/body|paint/i.test(o.material.name))o.material.color.set(S.color)});car.add(m);toast('Modelo GLB carregado (peças fixas).')},undefined,()=>toast('Não foi possível ler o modelo GLB.'));
+ if(THREE.GLTFLoader)return go();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/loaders/GLTFLoader.js';s.onload=go;s.onerror=()=>toast('Sem internet para carregar o GLTFLoader.');document.head.appendChild(s)}
+
+/* ===== 6. INTERFACE ===== */
+const TABS=['Catálogo','Exterior','Rodas e suspensão','Mecânica','Desempenho','Orçamento','Ajustes'];
+let tt;function toast(t){const e=$('toast');e.textContent=t;e.classList.add('s');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('s'),2300)}
+const row=k=>`<p class="lb">${NAME[k]}</p><div class="ch">${OPT[k].map((l,i)=>`<button class="${S[k]==i?'on':''}" data-k="${k}" data-v="${i}" title="${PR[k][i]?fmt(PR[k][i])+' (preço ilustrativo)':'Incluso'}">${l}</button>`).join('')}</div>`;
+const sw=(k,a)=>`<div class="ch">${a.map(x=>`<button class="sw ${S[k]==x?'on':''}" style="background:${x}" data-k="${k}" data-v="${x}" title="${x}"></button>`).join('')}</div>`;
+const list=()=>CARS.map((x,i)=>[x,i]).filter(([x])=>(fc=='Todos'||x.cat==fc)&&(x.b+' '+x.m+' '+x.y+' '+x.body).toLowerCase().includes(q.toLowerCase()))
+ .map(([x,i])=>`<button class="cd ${i==S.car?'on':''}" data-a="car" data-v="${i}"><b>${x.b} ${x.m}</b> <small>${x.y} · ${x.cat}</small><small>${x.eng} · ${x.dr} · ${x.hp} cv · ${x.tq} Nm</small></button>`).join('')||'<p class="nt">Nenhum veículo encontrado.</p>';
+function lines(){const o=[];for(const k in PR)if(PR[k][S[k]])o.push([NAME[k]+': '+OPT[k][S[k]],PR[k][S[k]]]);S.mods.forEach(k=>o.push([MODS[k][0],MODS[k][1]]));return o}
+function saves(){try{return JSON.parse(localStorage.getItem('ug3d')||'[]')}catch(e){return[]}}
+function render(){
+ $('nav').innerHTML=TABS.map((t,i)=>`<button class="${i==tab?'on':''}" data-t="${i}">${t}</button>`).join('');
+ const c=CARS[S.car],o=stats({...S0(),car:S.car}),n=stats(S);let h='';
+ if(tab==0)h=`<input id="q" placeholder="Buscar marca, modelo ou ano…" value="${q}"><div class="ch" style="margin-top:8px">${['Todos',...new Set(CARS.map(x=>x.cat))].map(x=>`<button class="${fc==x?'on':''}" data-a="fc" data-v="${x}">${x}</button>`).join('')}</div><div id="lst">${list()}</div><p class="nt">Os carros são modelos 3D demonstrativos gerados por código (formas simples por tipo de carroceria), não réplicas exatas. Dados e preços são aproximados e ilustrativos.</p>`;
+ if(tab==1)h=`<p class="lb">Cor</p>${sw('color',COL)}<div class="ch"><input type="color" id="cc" value="${S.color}" title="Cor personalizada"></div>`+['finish','spoiler','kit','stripe','tint','tips','hl'].map(row).join('')+`<p class="lb">Placa</p><input id="plate" maxlength="8" value="${S.plate}">`;
+ if(tab==2)h=['wheel','size','susp'].map(row).join('')+`<p class="lb">Pinças de freio</p>${sw('caliper',['#e62b1e','#ffc400','#2f7bff','#e8e8ea'])}`;
+ if(tab==3){const p=PT[sel];h=`<div class="ch"><button class="${xray?'on':''}" data-a="xr" title="Deixa a carroceria transparente">Raio-X</button><button data-a="hood" title="Abre ou fecha o capô">Capô</button></div>`+
+  (p?`<div class="cd" style="border-color:var(--ac)"><b>${p[1]}</b><small>Função: ${p[2]}</small><small>Estado: ${{turbo:'turbo',ic:'ic',exhaust:'exhaust',brakes:'brakes'}[sel]?(S.mods.includes(sel)?'Modificado (Desempenho)':(sel=='turbo'||sel=='ic'?'Não instalado (instale em Desempenho)':'Original')):'Original'}</small></div>`:'<p class="nt">Clique numa peça no carro (use o Raio-X) ou escolha abaixo.</p>')+
+  TREE.map(g=>`<details open><summary>${g[0]}</summary>${g[1].map(x=>`<button class="cd ${x[0]==sel?'on':''}" data-a="p" data-v="${x[0]}"><b>${x[1]}</b><small>${x[2]}${x[0]=='-'?' (sem modelo 3D)':''}</small></button>`).join('')}</details>`).join('')}
+ if(tab==4){const r=(l,a,b)=>`<tr><td>${l}</td><td>${a}</td><td class="${a!=b?'up':''}">${b}</td></tr>`;
+  h=`<table><tr><th></th><th>Original</th><th>Atual</th></tr>${r('Potência',o.hp+' cv',n.hp+' cv')}${r('Torque',o.tq+' Nm',n.tq+' Nm')}${r('Peso',o.kg+' kg',n.kg+' kg')}${r('Peso/potência',o.r.toFixed(2)+' kg/cv',n.r.toFixed(2)+' kg/cv')}${r('0–100 km/h',o.t.toFixed(1)+' s',n.t.toFixed(1)+' s')}</table><p class="nt">Números simulados por fórmulas simples. Não são medições de dinamômetro.</p>`+
+  Object.keys(MODS).map(k=>{const m=MODS[k];return`<button class="cd ${S.mods.includes(k)?'on':''}" data-a="mod" data-v="${k}" title="${m[5]}"><b>${m[0]}</b><small>${fmt(m[1])} (ilustrativo) · ${m[5]}</small></button>`}).join('')+
+  (S.mods.includes('turbo')?`<p class="lb">Pressão do turbo: ${S.boost.toFixed(1)} bar</p><input type="range" id="bst" min=".3" max="1.2" step=".1" value="${S.boost}" style="width:100%">`:'')}
+ if(tab==5){const L=lines(),sv=saves();h=`<p>Veículo (valor ilustrativo): <b>${fmt(c.p)}</b></p>`+(L.length?`<table>${L.map(x=>`<tr><td>${x[0]}</td><td>${fmt(x[1])}</td></tr>`).join('')}</table>`:'<p class="nt">Nenhuma modificação instalada. Personalize o carro nas outras abas.</p>')+
+  `<p class="lb">Custo das modificações</p><p class="big">${fmt(n.cost)}</p><p>Total: <b>${fmt(c.p+n.cost)}</b></p><p class="nt">Todos os preços são exemplos, não cotações reais. Potência: ${o.hp} → ${n.hp} cv.</p><div class="ch"><button data-a="undo">Desfazer</button><button data-a="reset">Restaurar original</button><button data-a="save">Salvar</button><button data-a="exp">Exportar JSON</button></div>`+
+  (sv.length?`<p class="lb">Configurações salvas neste navegador</p>`+sv.map((s,i)=>`<div class="ch"><button data-a="load" data-v="${i}">${s.n}</button><button data-a="del" data-v="${i}" title="Excluir">×</button></div>`).join(''):'')}
+ if(tab==6)h=`<p class="lb">Sons</p><div class="ch"><button data-a="snd">${mute?'Ligar sons':'Desligar sons'}</button></div><p class="lb">Iluminação</p><div class="ch">${LIGHTS.map((l,i)=>`<button class="${i==lightI?'on':''}" data-a="light" data-v="${i}">${l[0]}</button>`).join('')}</div><p class="lb">Câmera</p><div class="ch"><button class="${auto?'on':''}" data-a="auto">Giro automático</button></div><p class="lb">Qualidade</p><div class="ch"><button data-a="pr" data-v="1">Leve</button><button data-a="pr" data-v="2">Alta</button></div><p class="lb">Importar modelo GLB</p><input type="file" id="glb" accept=".glb"><p class="nt">Requer internet para o carregador. O modelo substitui o carro procedural (sem portas e capô animados). Escolha outro carro no Catálogo para voltar.</p>`;
+ $('pan').innerHTML=h;
+}
+const bar=[['Frente'],['Lateral'],['Traseira'],['Topo'],['Baixo'],['Capô','hood'],['Portas','door'],['Porta-malas','trunk'],['Raio-X','xr'],['Luz','light'],['Motor','eng'],['Acelerar','rev']];
+function drawBar(){$('bar').innerHTML=bar.map(b=>`<button data-l="${b[0]}" class="${(b[1]&&T[b[1]]||b[1]=='xr'&&xray||b[1]=='eng'&&eo)?'on':''}">${b[0]}</button>`).join('')}
+function go(l){const k=bar.find(b=>b[0]==l)[1];
+ if(!k)view(l);else if(k=='hood'){T.hood=1-T.hood;tone(300,.2,'triangle',.15,200)}else if(k=='door'||k=='trunk'){T[k]=1-T[k];thud()}
+ else if(k=='xr'){xray=!xray;buildCar()}else if(k=='light')setLight(lightI+1);else if(k=='eng'){if(!engine()&&!mute)toast('Motor desligado');else toast('Motor ligado')}else rev();drawBar()}
+function act(a,v){
+ if(a=='car'){push();S={...S0(),color:S.color,car:+v};sel=null;T.hood=T.door=T.trunk=0;buildCar();render()}
+ else if(a=='fc'){fc=v;render()}
+ else if(a=='mod'){push();const i=S.mods.indexOf(v);i<0?S.mods.push(v):S.mods.splice(i,1);buildCar();render();toast((i<0?'Instalado: ':'Removido: ')+MODS[v][0]);tone(500,.12,'square',.04,900)}
+ else if(a=='undo'){if(!hist.length)return toast('Nada para desfazer.');S=JSON.parse(hist.pop());buildCar();render()}
+ else if(a=='reset'){push();S={...S0(),car:S.car};buildCar();render();toast('Configuração original restaurada.')}
+ else if(a=='save'){try{const s=saves();s.push({n:CARS[S.car].m+' · '+new Date().toLocaleString('pt-BR'),s:S});localStorage.setItem('ug3d',JSON.stringify(s.slice(-8)));toast('Configuração salva neste navegador.')}catch(e){toast('Não foi possível salvar (armazenamento bloqueado).')}render()}
+ else if(a=='load'){push();S={...S0(),...saves()[+v].s};buildCar();render()}
+ else if(a=='del'){const s=saves();s.splice(+v,1);try{localStorage.setItem('ug3d',JSON.stringify(s))}catch(e){}render()}
+ else if(a=='exp'){const c=CARS[S.car],n=stats(S),j=JSON.stringify({app:'ULTIMATE GARAGE 3D',veiculo:c,configuracao:S,potencia_cv:n.hp,torque_Nm:n.tq,peso_kg:n.kg,custo_modificacoes_BRL:n.cost,aviso:'Preços ilustrativos e números simulados.'},null,2),
+  a2=document.createElement('a');a2.href=URL.createObjectURL(new Blob([j],{type:'application/json'}));a2.download='garagem-'+c.m.replace(/\W+/g,'-')+'.json';a2.click();toast('JSON exportado.')}
+ else if(a=='p')selPart(v);
+ else if(a=='xr'){xray=!xray;buildCar();render();drawBar()}
+ else if(a=='hood'){T.hood=1-T.hood;drawBar()}
+ else if(a=='snd'){mute=!mute;if(mute&&eo)engine();$('snd').textContent=mute?'Som: desligado':'Som: ligado';render()}
+ else if(a=='light'){setLight(+v);render()}
+ else if(a=='auto'){auto=!auto;render()}
+ else if(a=='pr'){R.setPixelRatio(+v);render()}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;tone(900,.04,'square',.025);
+ if(d.t!=null){tab=+d.t;render()}else if(d.k){push();S[d.k]=d.v[0]=='#'?d.v:+d.v;buildCar();render()}else if(d.l)go(d.l);else if(d.a)act(d.a,d.v)});
+$('pan').addEventListener('input',e=>{const t=e.target;
+ if(t.id=='q'){q=t.value;$('lst').innerHTML=list()}else if(t.id=='plate'){S.plate=t.value.toUpperCase();buildCar()}else if(t.id=='cc'){S.color=t.value;buildCar()}});
+$('pan').addEventListener('change',e=>{const t=e.target;if(t.id=='bst'){S.boost=+t.value;render()}else if(t.id=='glb'&&t.files[0])loadGLB(URL.createObjectURL(t.files[0]))});
+$('snd').onclick=()=>act('snd');$('tg').onclick=()=>$('side').classList.toggle('h');
+
+/* ===== 7. LOOP DE ANIMAÇÃO ===== */
+function resize(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',resize);resize();
+function frame(t){requestAnimationFrame(frame);
+ if(auto&&!drag&&t-last>3000)tth+=.003;
+ th+=(tth-th)*.1;ph+=(tph-ph)*.1;rad+=(trad-rad)*.1;
+ cam.position.set(rad*Math.sin(ph)*Math.cos(th),.7+rad*Math.cos(ph),rad*Math.sin(ph)*Math.sin(th));cam.lookAt(0,.7,0);
+ for(const k in cur)cur[k]+=(T[k]-cur[k])*.12;
+ if(hood)hood.rotation.z=cur.hood;if(trunk)trunk.rotation.z=-cur.trunk*.85;doors.forEach(d=>d.rotation.y=d.userData.s*cur.door*.95);
+ car.position.y=eo?Math.sin(t*.09)*.004:0;R.render(scene,cam)}
+
+/* ===== 8. INICIALIZAÇÃO ===== */
+buildCar();render();drawBar();frame(0);
+let p=0;const iv=setInterval(()=>{p+=14;$('lb').style.width=Math.min(p,100)+'%';if(p>=100){clearInterval(iv);$('load').style.opacity=0;setTimeout(()=>$('load').remove(),600);toast('Garagem pronta. Arraste para girar o carro.')}},140);
+</script>
+</body>
+</html>

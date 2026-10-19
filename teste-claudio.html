@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Rosa Bella · Beleza e Bem-estar</title>
+<style>
+:root{--bg:#fff6f8;--card:#fff;--tx:#3a2335;--mut:#85707f;--ac:#d6336c;--ac2:#b197fc;--line:#f3dce5;--g:#25d366;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1220;--card:#2a1a2e;--tx:#fbeef4;--mut:#c0a8b8;--line:#3d2a42}}
+:root[data-theme="dark"]{--bg:#1d1220;--card:#2a1a2e;--tx:#fbeef4;--mut:#c0a8b8;--line:#3d2a42}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6}
+h1,h2,.logo{font-family:Georgia,"Times New Roman",serif}
+.wrap{max-width:1050px;margin:auto;padding:0 20px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;justify-content:space-between;align-items:center;height:60px}
+.logo{font-weight:700;font-size:1.3rem;font-style:italic;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--g);color:#fff;border:0;padding:14px 26px;border-radius:50px;font-weight:700;font-size:1rem;text-decoration:none;cursor:pointer;box-shadow:0 8px 22px rgba(37,211,102,.35);transition:transform .2s}
+.btn:hover{transform:translateY(-3px) scale(1.03)}
+.btn.sm{padding:9px 18px;font-size:.85rem}
+.hero{position:relative;overflow:hidden;padding:80px 0 100px;background:linear-gradient(135deg,#ffd6e5 0,#e5dbff 100%);color:#3a2335}
+.hero .wrap{position:relative;z-index:2;display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center}
+.pill{display:inline-block;background:#fff;color:var(--ac);padding:5px 16px;border-radius:30px;font-size:.8rem;font-weight:700;margin-bottom:16px}
+.hero h1{font-size:clamp(2.3rem,6.5vw,4rem);line-height:1.1;margin-bottom:14px}
+.hero h1 em{color:var(--ac)}
+.hero p{max-width:440px;margin-bottom:26px;color:#5d4658}
+.fade{animation:in 1s both}
+@keyframes in{from{opacity:0;transform:translateY(26px)}}
+.petal{position:absolute;top:-40px;font-size:1.6rem;animation:fall linear infinite;opacity:.7}
+@keyframes fall{to{transform:translateY(560px) rotate(360deg)}}
+.art{width:100%;max-width:330px;margin:auto;animation:bob 5s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-16px) scale(1.03)}}
+@media(max-width:800px){.hero .wrap{grid-template-columns:1fr;text-align:center}.hero p{margin-inline:auto}.art{max-width:210px}}
+section{padding:70px 0}
+h2{font-size:clamp(1.8rem,4vw,2.5rem);text-align:center}
+.sub{text-align:center;color:var(--mut);margin:6px 0 38px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
+.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:26px;text-align:center;transition:transform .3s,box-shadow .3s}
+.card:hover{transform:translateY(-8px);box-shadow:0 16px 36px rgba(214,51,108,.18)}
+.ic{width:68px;height:68px;border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;font-size:1.9rem;background:linear-gradient(135deg,#ffd6e5,#e5dbff)}
+.card h3{margin-bottom:2px}.card small{color:var(--mut)}
+.price{font-size:1.8rem;font-weight:800;color:var(--ac);margin:8px 0 14px}
+.card .btn{width:100%}
+.pop{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--ac),var(--ac2));color:#fff;font-size:.7rem;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap}
+.hours{background:var(--card);border:1px solid var(--line);border-radius:24px;max-width:500px;margin:auto;padding:10px 26px}
+.hours div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px dashed var(--line)}
+.hours div:last-child{border:0}.hours .today{color:var(--ac);font-weight:800}
+.cta{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;text-align:center;border-radius:28px;padding:50px 20px}
+.cta p{margin:8px 0 22px}
+footer{text-align:center;color:var(--mut);padding:30px 20px 100px;font-size:.85rem}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:50%;background:var(--g);display:grid;place-items:center;font-size:1.8rem;text-decoration:none;z-index:30;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.6)}100%{box-shadow:0 0 0 22px rgba(37,211,102,0)}}
+.rv{opacity:0;transform:translateY(30px);transition:.7s}.rv.on{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><span class="logo" id="n1"></span><a class="btn sm" href="#" data-wa="">Agendar</a></div></nav>
+
+<header class="hero" id="top"><div class="wrap">
+<div class="fade"><span class="pill">🌸 Beleza e bem-estar</span><h1>Realce o seu <em>brilho</em> natural</h1><p>Cabelo, unhas e estética em um espaço feito para você relaxar. Agende pelo WhatsApp em segundos.</p><a class="btn" href="#" data-wa="">💬 Agendar pelo WhatsApp</a></div>
+<svg class="art" viewBox="0 0 300 300" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fb3"/><stop offset="1" stop-color="#b197fc"/></linearGradient></defs><circle cx="150" cy="150" r="130" fill="#fff" opacity=".7"/><g fill="url(#g)"><ellipse cx="150" cy="90" rx="30" ry="55"/><ellipse cx="150" cy="210" rx="30" ry="55"/><ellipse cx="90" cy="150" rx="55" ry="30"/><ellipse cx="210" cy="150" rx="55" ry="30"/><ellipse cx="108" cy="108" rx="28" ry="50" transform="rotate(-45 108 108)"/><ellipse cx="192" cy="192" rx="28" ry="50" transform="rotate(-45 192 192)"/><ellipse cx="192" cy="108" rx="28" ry="50" transform="rotate(45 192 108)"/><ellipse cx="108" cy="192" rx="28" ry="50" transform="rotate(45 108 192)"/></g><circle cx="150" cy="150" r="28" fill="#ffd43b"/></svg>
+</div></header>
+
+<section id="servicos"><div class="wrap"><h2 class="rv">Nossos serviços</h2><p class="sub rv">Cuidado e carinho em cada detalhe</p><div class="grid" id="lista"></div></div></section>
+
+<section id="horarios" style="background:color-mix(in srgb,var(--ac) 6%,var(--bg))"><div class="wrap"><h2 class="rv">Horários de atendimento</h2><p class="sub rv">Atendimento com hora marcada</p><div class="hours rv" id="hrs"></div></div></section>
+
+<section><div class="wrap"><div class="cta rv"><h2>Que tal um momento só seu?</h2><p>Escolha o melhor horário e fale com a gente.</p><a class="btn" href="#" data-wa="">💬 Chamar no WhatsApp</a></div></div></section>
+
+<footer id="ft"></footer>
+<a class="fab" href="#" data-wa="" aria-label="WhatsApp">💬</a>
+
+<script>
+/* ===== EDITE AQUI PARA CADA CLIENTE ===== */
+const C={
+ nome:"Rosa Bella",
+ whatsapp:"5545999438099", // DDI + DDD + número, sem espaços
+ endereco:"Rua das Flores, 123 · Centro",
+ servicos:[["💇‍♀️","Corte feminino","45 min",70,0],["🎨","Coloração","2 h",180,0],["💅","Manicure e pedicure","1 h 15",65,1],["✨","Escova modelada","50 min",55,0],["🧖‍♀️","Limpeza de pele","1 h",120,0],["🌿","Hidratação profunda","1 h",90,0]],
+ horarios:[["Segunda","Fechado"],["Terça","09h – 19h"],["Quarta","09h – 19h"],["Quinta","09h – 19h"],["Sexta","09h – 20h"],["Sábado","08h – 17h"],["Domingo","Fechado"]]
+};
+/* ======================================== */
+const wa=t=>"https://wa.me/"+C.whatsapp+"?text="+encodeURIComponent(t);
+document.title=C.nome+" · Beleza e Bem-estar";
+document.getElementById("n1").textContent=C.nome;
+document.getElementById("ft").textContent="© 2026 "+C.nome+" · "+C.endereco;
+document.querySelectorAll("[data-wa='']").forEach(a=>a.dataset.wa="Olá! Quero agendar um horário no "+C.nome+".");
+document.getElementById("lista").innerHTML=C.servicos.map(([i,n,d,p,h])=>`<div class="card rv">${h?'<span class="pop">💖 Mais pedido</span>':''}<div class="ic">${i}</div><h3>${n}</h3><small>Duração: ${d}</small><div class="price">R$ ${p}</div><a class="btn" href="#" data-wa="Olá! Quero agendar: ${n} (R$ ${p}).">Agendar</a></div>`).join("");
+const hoje=[6,0,1,2,3,4,5][new Date().getDay()];
+document.getElementById("hrs").innerHTML=C.horarios.map(([d,h],k)=>`<div class="${k==hoje?'today':''}"><span>${d}${k==hoje?' · hoje':''}</span><span>${h}</span></div>`).join("");
+const hero=document.getElementById("top");
+for(let i=0;i<10;i++){const p=document.createElement("span");p.className="petal";p.textContent=["🌸","🌷","✨"][i%3];p.style.left=(i*10+Math.random()*6)+"%";p.style.animationDuration=(7+Math.random()*6)+"s";p.style.animationDelay=(-Math.random()*8)+"s";hero.appendChild(p)}
+document.addEventListener("click",e=>{const a=e.target.closest("[data-wa]");if(a){e.preventDefault();window.open(wa(a.dataset.wa),"_blank")}});
+const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add("on");io.unobserve(x.target)}}),{threshold:.15});
+document.querySelectorAll(".rv").forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
