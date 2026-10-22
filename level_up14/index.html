@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0b0e">
+  <meta name="description" content="LEVEL UP — sistema pessoal de produtividade gamificada.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <title>LEVEL UP — Evolução Pessoal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#" data-page="dashboard"><span class="brand-mark">L<span>+</span></span><span>LEVEL<span class="brand-red">UP</span><small>PERSONAL SYSTEM</small></span></a>
+    <div class="side-label">WORKSPACE</div>
+    <nav id="navigation" aria-label="Navegação principal">
+      <button class="nav-item active" data-page="dashboard"><span>◈</span> Dashboard</button>
+      <button class="nav-item" data-page="routine"><span>▦</span> Minha Rotina</button>
+      <button class="nav-item" data-page="english"><span>◎</span> Inglês</button>
+      <button class="nav-item" data-page="coding"><span>⌘</span> Programação</button>
+      <button class="nav-item" data-page="exercise"><span>↗</span> Exercícios</button>
+      <button class="nav-item" data-page="missions"><span>✳</span> Missões</button>
+      <button class="nav-item" data-page="stats"><span>▥</span> Estatísticas</button>
+      <button class="nav-item" data-page="settings"><span>⚙</span> Configurações</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="mini-profile"><div class="avatar">LV</div><div><strong id="side-name">Player One</strong><small id="side-level">NÍVEL 1 · RECRUTA</small></div><span class="online-dot"></span></div>
+      <div class="local-note">● DADOS SALVOS NESTE NAVEGADOR</div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <button class="mobile-menu" id="mobile-menu" aria-label="Abrir menu">☰</button>
+      <div class="breadcrumb"><span>SISTEMA</span><b>/</b><strong id="page-crumb">DASHBOARD</strong></div>
+      <div class="topbar-right"><div class="live-clock"><span class="clock-dot"></span><span id="clock">--:--:--</span></div><button class="icon-button" id="quick-add" title="Adicionar atividade">＋</button><button class="user-chip" id="edit-profile"><span class="avatar small-avatar">LV</span><span id="top-name">Player One</span><span class="chevron">⌄</span></button></div>
+    </header>
+    <div id="page-content" class="content"></div>
+    <footer>LEVEL UP <span>·</span> SUA EVOLUÇÃO, NO SEU RITMO <span class="footer-right">LOCAL FIRST / v1.0</span></footer>
+  </main>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+<div id="tutorial-root" aria-live="polite"></div>
+<div id="level-overlay" class="level-overlay" hidden><div class="level-box"><div class="level-spark">✦</div><p>EVOLUÇÃO DESBLOQUEADA</p><h2>LEVEL <span id="new-level">2</span></h2><span id="level-message">Você está ficando mais forte.</span><button class="btn primary" id="close-level">CONTINUAR →</button></div></div>
+<!-- Supabase usa somente a chave pública no navegador; o modo local segue disponível sem configuração. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js" onerror="console.info('Supabase não configurado: modo local ativo.')"></script>
+<script src="supabase-integration.js"></script>
+<!-- Supabase usa somente a chave pública no navegador; o modo local segue disponível sem configuração. -->
+<script src="app.js"></script>
+</body>
+</html>
